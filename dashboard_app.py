@@ -90,3 +90,9 @@ if not daily_rev.empty:
     st.line_chart(daily_rev.set_index("Date"))
 else:
     st.info("No data in selected filters to plot.")
+
+@st.cache_data
+def load_csv(path_or_buffer):
+    """Load CSV from file path or file-like object. Cached by Streamlit."""
+    print("📁 Reading CSV from disk... (this happens only once if caching works)")
+    return pd.read_csv(path_or_buffer)
