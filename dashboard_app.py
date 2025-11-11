@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import seaborn as sns
@@ -8,11 +9,24 @@ st.set_page_config(page_title="Sales Dashboard", layout="wide")
 st.title("📊 Sales Dashboard")
 st.write("Analyze your daily product performance interactively!")
 
-# Load data (same folder)
-try:
-    df = pd.read_csv("sales_data.csv")
-except FileNotFoundError:
-    st.error("sales_data.csv not found in this folder. Create it and rerun.")
+# --- Cached loader ---
+@st.cache_data
+def load_csv(path_or_buffer):
+    """Load CSV from file path or file-like object. Cached by Streamlit."""
+    return pd.read_csv(path_or_buffer)
+
+# --- Data source: uploaded file OR repo CSV ---
+CSV_PATH = "sales_data.csv"
+uploaded_file = st.sidebar.file_uploader("Upload CSV (optional)", type=["csv"])
+
+if uploaded_file is not None:
+    # If user uploaded a file, use it (this bypasses repo CSV)
+    df = load_csv(uploaded_file)
+elif os.path.exists(CSV_PATH):
+    # Use cached loader for repo CSV
+    df = load_csv(CSV_PATH)
+else:
+    st.warning("No sales_data.csv found in repo — upload a CSV in the sidebar to continue.")
     st.stop()
 
 # Normalize column names
@@ -57,6 +71,10 @@ st.dataframe(filtered_df.reset_index(drop=True))
 
 total_rev = filtered_df["Revenue"].sum()
 st.metric(label="💰 Total Revenue", value=f"₹{total_rev:,.2f}")
+
+# Download filtered CSV button
+csv_bytes = filtered_df.to_csv(index=False).encode("utf-8")
+st.download_button("Download filtered data (.csv)", data=csv_bytes, file_name="filtered_sales.csv", mime="text/csv")
 
 # Visualizations
 st.subheader("📈 Revenue by Product")
